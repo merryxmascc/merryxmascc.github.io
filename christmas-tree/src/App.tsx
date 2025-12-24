@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useContext, useEffect, useRef } from 'react';
+import React, { useState, Suspense, useContext, useEffect, useRef, useCallback } from 'react';
 import { TreeContextType, AppState, TreeContext, PointerCoords } from './types';
 import Experience from './components/Experience';
 import GestureInput from './components/GestureInput';
@@ -91,18 +91,19 @@ const AppContent: React.FC = () => {
     const { state, setState, webcamEnabled, setWebcamEnabled, pointer, hoverProgress, selectedPhotoUrl, setSelectedPhotoUrl, clickTrigger } = useContext(TreeContext) as TreeContextType;
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    const playAudio = useCallback(async () => {
+        if (!audioRef.current) return;
+        try {
+            await audioRef.current.play();
+        } catch (err) {
+            console.warn('Audio play blocked or failed', err);
+        }
+    }, []);
+
     useEffect(() => {
         if (!audioRef.current) return;
         audioRef.current.loop = true;
         audioRef.current.volume = 0.35;
-        const tryPlay = () => audioRef.current?.play().catch((err) => console.warn('Audio play blocked or failed', err));
-
-        tryPlay(); // initial attempt
-
-        const unlock = () => { tryPlay(); cleanup(); };
-        const onFocus = () => tryPlay();
-        const onVisibility = () => document.visibilityState === 'visible' && tryPlay();
-
         const cleanup = () => {
             window.removeEventListener('pointerdown', unlock);
             window.removeEventListener('touchstart', unlock);
@@ -110,7 +111,11 @@ const AppContent: React.FC = () => {
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
+        const unlock = () => { playAudio(); cleanup(); };
+        const onFocus = () => playAudio();
+        const onVisibility = () => document.visibilityState === 'visible' && playAudio();
 
+        playAudio();
         window.addEventListener('pointerdown', unlock);
         window.addEventListener('touchstart', unlock);
         window.addEventListener('keydown', unlock);
@@ -118,7 +123,7 @@ const AppContent: React.FC = () => {
         document.addEventListener('visibilitychange', onVisibility);
 
         return cleanup;
-    }, []);
+    }, [playAudio]);
     
     useEffect(() => {
         if (selectedPhotoUrl && pointer) {
