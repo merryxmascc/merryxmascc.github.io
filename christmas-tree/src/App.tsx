@@ -89,7 +89,37 @@ const PhotoModal: React.FC<{ url: string | null, onClose: () => void }> = ({ url
 
 const AppContent: React.FC = () => {
     const { state, setState, webcamEnabled, setWebcamEnabled, pointer, hoverProgress, selectedPhotoUrl, setSelectedPhotoUrl, clickTrigger } = useContext(TreeContext) as TreeContextType;
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
+    useEffect(() => {
+        if (!audioRef.current) return;
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.35;
+        const tryPlay = () => audioRef.current?.play().catch((err) => console.warn('Audio play blocked or failed', err));
+
+        tryPlay(); // initial attempt
+
+        const unlock = () => { tryPlay(); cleanup(); };
+        const onFocus = () => tryPlay();
+        const onVisibility = () => document.visibilityState === 'visible' && tryPlay();
+
+        const cleanup = () => {
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('touchstart', unlock);
+            window.removeEventListener('keydown', unlock);
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+
+        window.addEventListener('pointerdown', unlock);
+        window.addEventListener('touchstart', unlock);
+        window.addEventListener('keydown', unlock);
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return cleanup;
+    }, []);
+    
     useEffect(() => {
         if (selectedPhotoUrl && pointer) {
             const x = pointer.x * window.innerWidth;
@@ -131,6 +161,15 @@ const AppContent: React.FC = () => {
                     </div>
                 </header>
             </div>
+            <audio
+                ref={audioRef}
+                src="/audio/christmas-jazz.mp3"
+                className="hidden"
+                preload="auto"
+                autoPlay
+                playsInline
+                onError={(e) => console.warn('Audio load error', e)}
+            />
 
             {/* 光标层 (z-200) */}
             <DreamyCursor pointer={pointer} progress={hoverProgress} />
