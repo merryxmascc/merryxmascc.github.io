@@ -1,1 +1,1 @@
-pdfjs-dist 6.3.289 from https://registry.npmjs.org/pdfjs-dist (sha512 verified against the npm registry). Apache-2.0, see LICENSE.
+pdfjs-dist 6.3.289, legacy build (works in older Safari/iOS), from https://registry.npmjs.org/pdfjs-dist (sha512 verified against the npm registry). Apache-2.0, see LICENSE.
